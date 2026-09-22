@@ -8,6 +8,14 @@
 
 A custom [Home Assistant](https://www.home-assistant.io/) integration that lets you control and monitor your [Salus iT600](https://salus-controls.com/) smart home devices **locally** through the UGE600 or UG800 gateway — thermostats, smart plugs, roller shutters, sensors, and more, all without cloud dependency.
 
+## This fork
+
+This repository is a fork of [`Jordi-14/homeassistant_salus`](https://github.com/Jordi-14/homeassistant_salus) with **Polish translations**. Integration metadata, issue tracker, and HACS releases remain with upstream.
+
+Install from HACS using the upstream repository unless you specifically want this fork's `pl` translations. YAML `climate:` / `binary_sensor:` platform configuration from the 2020 snapshot is no longer supported — add **Salus iT600** from **Settings → Devices & Services**.
+
+Existing UI config entries keep the `salus` domain, so a folder swap plus Home Assistant restart should preserve host, EUID, and entity registry records. Copy the inner `custom_components/salus` folder into `config/custom_components/salus`; do not clone this whole repository into that path.
+
 ## Features
 
 ### Climate

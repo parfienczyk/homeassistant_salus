@@ -1,0 +1,130 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Urządzenie jest już skonfigurowane",
+            "already_in_progress": "Proces konfiguracji dla urządzenia Salus już trwa.",
+            "reauth_successful": "Dane uwierzytelniające bramki Salus zostały zaktualizowane.",
+            "reconfigure_successful": "Ustawienia połączenia bramki Salus zostały zaktualizowane.",
+            "wrong_gateway": "Zaktualizowane ustawienia połączyły się z inną bramką Salus."
+        },
+        "error": {
+            "auth_error": "Błąd połączenia, sprawdź EUID",
+            "connect_error": "Błąd połączenia, sprawdź adres IP",
+            "invalid_euid": "EUID musi mieć dokładnie 16 znaków szesnastkowych",
+            "unsupported_firmware": "Oprogramowanie bramki używa nieobsługiwanego protokołu lokalnego",
+            "unknown": "Nieoczekiwany błąd"
+        },
+        "flow_title": "Salus: {name}",
+        "step": {
+            "reauth_confirm": {
+                "data": {
+                    "host": "Adres IP",
+                    "token": "EUID"
+                },
+                "description": "Home Assistant nie mógł uwierzytelnić się w bramce. Sprawdź EUID na etykiecie bramki albo spróbuj 0000000000000000, jeśli wydrukowany EUID nie działa.",
+                "title": "Zaktualizuj dane uwierzytelniające bramki Salus"
+            },
+            "reconfigure": {
+                "data": {
+                    "host": "Adres IP",
+                    "token": "EUID"
+                },
+                "description": "Zaktualizuj adres IP lub EUID bramki. Użyj tego, gdy zmienił się adres IP, tryb Local WiFi Mode albo chcesz wypróbować zapasowy EUID złożony z samych zer.",
+                "title": "Zaktualizuj połączenie z bramką Salus"
+            },
+            "user": {
+                "data": {
+                    "host": "Adres IP",
+                    "name": "Nazwa bramki",
+                    "token": "EUID"
+                },
+                "description": "Potrzebujesz adresu IP oraz pierwszych 16 znaków EUID (bez spacji), który jest wydrukowany na spodzie bramki pod portem microUSB (np. 001E5E0D32906128).",
+                "title": "Połącz bramkę Salus"
+            }
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "data": {
+                    "poll_failure_threshold": "Nieudane odpytania przed niedostępnością",
+                    "scan_interval": "Interwał odpytywania bramki",
+                    "post_command_refresh_delay": "Opóźnienie weryfikacji polecenia"
+                },
+                "data_description": {
+                    "poll_failure_threshold": "Liczba kolejnych nieudanych odpytań bramki, które są tolerowane, zanim encje zostaną oznaczone jako niedostępne.",
+                    "scan_interval": "Liczba sekund między regularnymi odpytaniami bramki.",
+                    "post_command_refresh_delay": "Liczba sekund oczekiwania przed odświeżeniem po poleceniu."
+                },
+                "description": "Dostosuj dostępność bramki i czas weryfikacji poleceń.",
+                "title": "Opcje Salus"
+            }
+        }
+    },
+    "issues": {
+        "gateway_unavailable": {
+            "description": "Home Assistant nie może połączyć się z bramką Salus pod adresem {host}. Sprawdź, czy bramka jest włączona, adres IP jest nadal poprawny, a Local WiFi Mode jest włączony w aplikacji Salus. Jeśli wydrukowany EUID nie działa, spróbuj 0000000000000000.",
+            "title": "Bramka Salus jest niedostępna"
+        }
+    },
+    "entity": {
+        "binary_sensor": {
+            "battery": {
+                "name": "Bateria"
+            },
+            "battery_problem": {
+                "name": "Problem z baterią"
+            },
+            "low_battery": {
+                "name": "Niski poziom baterii"
+            },
+            "open_window": {
+                "name": "Otwarte okno"
+            },
+            "problem": {
+                "name": "Problem"
+            }
+        },
+        "climate": {
+            "thermostat": {
+                "state_attributes": {
+                    "preset_mode": {
+                        "state": {
+                            "eco": "Eco",
+                            "follow_schedule": "Harmonogram Salus",
+                            "permanent_hold": "Stałe utrzymanie",
+                            "standby": "Czuwanie",
+                            "away": "Poza domem",
+                            "schedule_override": "Nadpisanie harmonogramu"
+                        }
+                    }
+                }
+            }
+        },
+        "lock": {
+            "keypad_lock": {
+                "name": "Blokada klawiatury"
+            }
+        },
+        "sensor": {
+            "battery": {
+                "name": "Bateria"
+            },
+            "energy": {
+                "name": "Energia"
+            },
+            "floor_temperature": {
+                "name": "Temperatura podłogi"
+            },
+            "humidity": {
+                "name": "Wilgotność"
+            },
+            "power": {
+                "name": "Moc"
+            },
+            "temperature": {
+                "name": "Temperatura"
+            }
+        }
+    }
+}
