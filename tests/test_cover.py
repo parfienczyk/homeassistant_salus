@@ -12,7 +12,7 @@ from salus_it600.exceptions import IT600ConnectionError
 from custom_components.salus.const import DOMAIN
 from custom_components.salus.coordinator import SalusData
 from custom_components.salus.cover import SalusCover
-from tests.conftest import FakeCoordinator, make_cover_device
+from tests.conftest import FakeCoordinator, deliver_poll, make_cover_device
 
 
 def _coordinator_with_covers(*devices):
@@ -151,13 +151,15 @@ class TestSalusCoverCommands:
         assert entity.is_closed is False
         assert entity.current_cover_position == 100
 
-        device.is_closed = False
-        device.current_cover_position = 100
+        device = deliver_poll(
+            entity, device, is_closed=False, current_cover_position=100
+        )
         assert entity.is_closed is False
         assert entity.current_cover_position == 100
 
-        device.is_closed = True
-        device.current_cover_position = 0
+        device = deliver_poll(
+            entity, device, is_closed=True, current_cover_position=0
+        )
         assert entity.is_closed is True
         assert entity.current_cover_position == 0
 
@@ -178,13 +180,15 @@ class TestSalusCoverCommands:
         assert entity.is_closed is True
         assert entity.current_cover_position == 0
 
-        device.is_closed = True
-        device.current_cover_position = 0
+        device = deliver_poll(
+            entity, device, is_closed=True, current_cover_position=0
+        )
         assert entity.is_closed is True
         assert entity.current_cover_position == 0
 
-        device.is_closed = False
-        device.current_cover_position = 100
+        device = deliver_poll(
+            entity, device, is_closed=False, current_cover_position=100
+        )
         assert entity.is_closed is False
         assert entity.current_cover_position == 100
 

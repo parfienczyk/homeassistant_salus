@@ -10,7 +10,7 @@ from salus_it600.exceptions import IT600ConnectionError
 from custom_components.salus.const import DOMAIN
 from custom_components.salus.coordinator import SalusData
 from custom_components.salus.lock import SalusThermostatLock
-from tests.conftest import FakeCoordinator, make_climate_device
+from tests.conftest import FakeCoordinator, deliver_poll, make_climate_device
 
 
 def _coordinator_with_lockable_climate(device):
@@ -86,10 +86,10 @@ class TestSalusThermostatLockCommands:
 
         assert entity.is_locked is True
 
-        device.locked = True
+        device = deliver_poll(entity, device, locked=True)
         assert entity.is_locked is True
 
-        device.locked = False
+        device = deliver_poll(entity, device, locked=False)
         assert entity.is_locked is False
 
     async def test_async_unlock(self):
@@ -109,10 +109,10 @@ class TestSalusThermostatLockCommands:
 
         assert entity.is_locked is False
 
-        device.locked = False
+        device = deliver_poll(entity, device, locked=False)
         assert entity.is_locked is False
 
-        device.locked = True
+        device = deliver_poll(entity, device, locked=True)
         assert entity.is_locked is True
 
     async def test_gateway_error_raises(self):

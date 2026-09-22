@@ -9,7 +9,12 @@ from salus_it600.exceptions import IT600ConnectionError
 from custom_components.salus.const import DOMAIN
 from custom_components.salus.coordinator import SalusData
 from custom_components.salus.switch import SalusSwitch
-from tests.conftest import FakeCoordinator, make_cover_device, make_switch_device
+from tests.conftest import (
+    FakeCoordinator,
+    deliver_poll,
+    make_cover_device,
+    make_switch_device,
+)
 
 
 def _coordinator_with_switches(*devices, cover_devices=()):
@@ -140,10 +145,10 @@ class TestSalusSwitchCommands:
 
         assert entity.is_on is True
 
-        device.is_on = True
+        device = deliver_poll(entity, device, is_on=True)
         assert entity.is_on is True
 
-        device.is_on = False
+        device = deliver_poll(entity, device, is_on=False)
         assert entity.is_on is False
 
     async def test_turn_off_triggers_refresh(self):
@@ -162,10 +167,10 @@ class TestSalusSwitchCommands:
 
         assert entity.is_on is False
 
-        device.is_on = False
+        device = deliver_poll(entity, device, is_on=False)
         assert entity.is_on is False
 
-        device.is_on = True
+        device = deliver_poll(entity, device, is_on=True)
         assert entity.is_on is True
 
     async def test_gateway_error_raises(self):

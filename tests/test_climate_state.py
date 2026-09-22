@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -35,6 +34,7 @@ from salus_it600.device_models import (
     SQ610_RUNNING_COOL,
     SQ610_RUNNING_HEAT,
 )
+from salus_it600.models import ClimateDevice
 
 from custom_components.salus import _climate_state as climate_state
 from custom_components.salus._climate_state import (
@@ -47,6 +47,7 @@ from custom_components.salus._climate_state import (
     RAW_PRESET_SCHEDULE_OVERRIDE,
     build_climate_view_state,
 )
+from tests.conftest import make_climate_device
 
 TURN_ON_OFF_FEATURES = (
     getattr(ClimateEntityFeature, "TURN_ON", ClimateEntityFeature(0))
@@ -54,7 +55,7 @@ TURN_ON_OFF_FEATURES = (
 )
 
 
-def _device(**overrides: Any) -> SimpleNamespace:
+def _device(**overrides: Any) -> ClimateDevice:
     values = {
         "model": "HTRP-RF(50)",
         "hvac_mode": HVAC_MODE_HEAT,
@@ -102,7 +103,7 @@ def _device(**overrides: Any) -> SimpleNamespace:
                 values["preset_mode"] = _raw_fc600_preset_mode(values["hold_type"])
             if values["preset_mode"] == RAW_PRESET_SCHEDULE_OVERRIDE:
                 values["preset_modes"].insert(1, RAW_PRESET_SCHEDULE_OVERRIDE)
-    return SimpleNamespace(**values)
+    return make_climate_device(**values)
 
 
 def _raw_sq610_preset_mode(hold_type: Any) -> str:

@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import asyncio
-from types import SimpleNamespace
+from dataclasses import is_dataclass, replace
 from typing import Any
 
 import pytest
+from salus_it600.models import (
+    BinarySensorDevice,
+    ClimateDevice,
+    CoverDevice,
+    SensorDevice,
+    SwitchDevice,
+)
 
 from custom_components.salus.coordinator import SalusData
 
@@ -104,19 +111,49 @@ class FakeCoordinator:
 
 # ---------------------------------------------------------------------------
 # Device fixture factories
+#
+# These build the client's real device models rather than stand-ins, so a
+# `salus-it600-client` upgrade that renames or drops a field breaks the suite
+# instead of passing against a fake that no longer matches the library.
 # ---------------------------------------------------------------------------
 
 
-def _device_base(unique_id, name, *, model, available=True, **values):
-    return SimpleNamespace(
-        available=available,
-        unique_id=unique_id,
-        name=name,
-        manufacturer="SALUS",
-        model=model,
-        sw_version=None,
-        **values,
-    )
+def replace_device(device: Any, **changes: Any) -> Any:
+    """Return a new snapshot of a device with some fields changed.
+
+    The client rebuilds immutable snapshots on every poll, so this is how a
+    device's state changes -- never by mutating a live object.
+    """
+    if is_dataclass(device):
+        return replace(device, **changes)
+    return device._replace(**changes)
+
+
+def deliver_poll(entity: Any, device: Any, **changes: Any) -> Any:
+    """Swap a fresh snapshot of one device into the coordinator data.
+
+    Stands in for the coordinator update that carries a new poll's snapshot to
+    an entity, which bare unit-test entities never receive.
+    """
+    updated = replace_device(device, **changes)
+    data = entity.coordinator.data
+    for collection in (
+        data.climate_devices,
+        data.binary_sensor_devices,
+        data.switch_devices,
+        data.cover_devices,
+        data.sensor_devices,
+    ):
+        if device.unique_id in collection:
+            collection[device.unique_id] = updated
+
+    # Production does this from `_handle_coordinator_update`, which needs a
+    # `hass` these entities do not have.
+    invalidate_view_cache = getattr(entity, "_invalidate_view_cache", None)
+    if invalidate_view_cache is not None:
+        invalidate_view_cache()
+
+    return updated
 
 
 def make_climate_device(
@@ -125,9 +162,9 @@ def make_climate_device(
     *,
     model: str = "SQ610RF",
     available: bool = True,
-    temperature_unit: str = "°C",
+    temperature_unit: str = "\u00b0C",
     precision: float = 0.1,
-    current_temperature: float = 21.5,
+    current_temperature: float | None = 21.5,
     current_humidity: float | None = 45.0,
     target_temperature: float = 22.0,
     max_temp: float = 35.0,
@@ -140,6 +177,10 @@ def make_climate_device(
     fan_mode: str | None = None,
     fan_modes: list[str] | None = None,
     locked: bool | None = False,
+    supported_features: int = 0,
+    device_class: str = "climate",
+    data: dict | None = None,
+    sw_version: str | None = None,
     extra_state_attributes: dict | None = None,
     hold_type: int | None = 2,
     system_mode: int | None = 4,
@@ -158,8 +199,8 @@ def make_climate_device(
     online_status: int | None = 1,
     cooling_capability_source: str = "cooling_control",
     diagnostic_fields: dict | None = None,
-) -> SimpleNamespace:
-    """Create a climate device SimpleNamespace."""
+) -> ClimateDevice:
+    """Create a climate device snapshot."""
     if preset_modes is None:
         preset_modes = [
             RAW_PRESET_FOLLOW_SCHEDULE,
@@ -173,8 +214,13 @@ def make_climate_device(
                 RAW_PRESET_AWAY,
                 RAW_PRESET_OFF,
             ]
-    return _device_base(
-        unique_id, name, model=model, available=available,
+    return ClimateDevice(
+        available=available,
+        name=name,
+        unique_id=unique_id,
+        manufacturer="SALUS",
+        model=model,
+        sw_version=sw_version,
         temperature_unit=temperature_unit,
         precision=precision,
         current_temperature=current_temperature,
@@ -184,12 +230,15 @@ def make_climate_device(
         min_temp=min_temp,
         hvac_mode=hvac_mode,
         hvac_action=hvac_action,
-        hvac_modes=hvac_modes or ["heat", "cool"],
+        hvac_modes=tuple(hvac_modes or ["heat", "cool"]),
         preset_mode=preset_mode,
-        preset_modes=preset_modes,
+        preset_modes=tuple(preset_modes),
         fan_mode=fan_mode,
-        fan_modes=fan_modes,
+        fan_modes=None if fan_modes is None else tuple(fan_modes),
         locked=locked,
+        supported_features=supported_features,
+        device_class=device_class,
+        data=data or {"UniID": unique_id},
         extra_state_attributes=extra_state_attributes,
         hold_type=hold_type,
         system_mode=system_mode,
@@ -211,26 +260,30 @@ def make_climate_device(
     )
 
 
-def make_fc600_device(unique_id: str = "fc600-1", name: str = "Fan Coil") -> SimpleNamespace:
+def make_fc600_device(
+    unique_id: str = "fc600-1",
+    name: str = "Fan Coil",
+    **overrides: Any,
+) -> ClimateDevice:
     """Create an FC600 fan-coil climate device."""
-    return make_climate_device(
-        unique_id=unique_id,
-        name=name,
-        model="FC600",
-        hvac_mode="heat",
-        hvac_modes=["off", "heat", "cool", "auto"],
-        preset_mode="Follow Schedule",
-        preset_modes=[
+    defaults: dict[str, Any] = {
+        "model": "FC600",
+        "hvac_mode": "heat",
+        "hvac_modes": ["off", "heat", "cool", "auto"],
+        "preset_mode": "Follow Schedule",
+        "preset_modes": [
             RAW_PRESET_FOLLOW_SCHEDULE,
             RAW_PRESET_PERMANENT_HOLD,
             RAW_PRESET_ECO,
             RAW_PRESET_OFF,
         ],
-        fan_mode="Auto",
-        fan_modes=["Auto", "High", "Medium", "Low", "Off"],
-        locked=None,
-        supports_fan=True,
-    )
+        "fan_mode": "Auto",
+        "fan_modes": ["Auto", "High", "Medium", "Low", "Off"],
+        "locked": None,
+        "supports_fan": True,
+    }
+    defaults.update(overrides)
+    return make_climate_device(unique_id=unique_id, name=name, **defaults)
 
 
 def make_switch_device(
@@ -242,13 +295,18 @@ def make_switch_device(
     device_class: str = "outlet",
     available: bool = True,
     data: dict | None = None,
-) -> SimpleNamespace:
-    """Create a switch device SimpleNamespace."""
-    return _device_base(
-        unique_id, name, model=model, available=available,
-        device_class=device_class,
+) -> SwitchDevice:
+    """Create a switch device snapshot."""
+    return SwitchDevice(
+        available=available,
+        name=name,
+        unique_id=unique_id,
         is_on=is_on,
+        device_class=device_class,
         data=data or {"UniID": unique_id, "Endpoint": 1},
+        manufacturer="SALUS",
+        model=model,
+        sw_version=None,
     )
 
 
@@ -257,23 +315,30 @@ def make_cover_device(
     name: str = "Bedroom Blinds",
     *,
     model: str = "RS600",
-    current_cover_position: int = 75,
+    current_cover_position: int | None = 75,
     is_opening: bool | None = None,
     is_closing: bool | None = None,
     is_closed: bool = False,
     supported_features: int = 7,  # OPEN | CLOSE | SET_POSITION
     device_class: str | None = None,
     available: bool = True,
-) -> SimpleNamespace:
-    """Create a cover device SimpleNamespace."""
-    return _device_base(
-        unique_id, name, model=model, available=available,
-        supported_features=supported_features,
-        device_class=device_class,
+    data: dict | None = None,
+) -> CoverDevice:
+    """Create a cover device snapshot."""
+    return CoverDevice(
+        available=available,
+        name=name,
+        unique_id=unique_id,
         current_cover_position=current_cover_position,
         is_opening=is_opening,
         is_closing=is_closing,
         is_closed=is_closed,
+        supported_features=supported_features,
+        device_class=device_class,
+        data=data or {"UniID": unique_id, "Endpoint": 1},
+        manufacturer="SALUS",
+        model=model,
+        sw_version=None,
     )
 
 
@@ -283,17 +348,24 @@ def make_binary_sensor_device(
     *,
     model: str = "SW600",
     is_on: bool = False,
-    device_class: str = "window",
+    device_class: str | None = "window",
     parent_unique_id: str | None = None,
     entity_category: str | None = None,
     extra_state_attributes: dict | None = None,
     available: bool = True,
-) -> SimpleNamespace:
-    """Create a binary sensor device SimpleNamespace."""
-    return _device_base(
-        unique_id, name, model=model, available=available,
+    data: dict | None = None,
+) -> BinarySensorDevice:
+    """Create a binary sensor device snapshot."""
+    return BinarySensorDevice(
+        available=available,
+        name=name,
+        unique_id=unique_id,
         is_on=is_on,
         device_class=device_class,
+        data=data or {"UniID": unique_id},
+        manufacturer="SALUS",
+        model=model,
+        sw_version=None,
         parent_unique_id=parent_unique_id,
         entity_category=entity_category,
         extra_state_attributes=extra_state_attributes,
@@ -306,20 +378,25 @@ def make_sensor_device(
     *,
     model: str = "TS600",
     state: Any = 23.4,
-    unit_of_measurement: str = "°C",
+    unit_of_measurement: str = "\u00b0C",
     device_class: str = "temperature",
     parent_unique_id: str | None = None,
     entity_category: str | None = None,
     available: bool = True,
     data: dict | None = None,
-) -> SimpleNamespace:
-    """Create a sensor device SimpleNamespace."""
-    return _device_base(
-        unique_id, name, model=model, available=available,
+) -> SensorDevice:
+    """Create a sensor device snapshot."""
+    return SensorDevice(
+        available=available,
+        name=name,
+        unique_id=unique_id,
         state=state,
         unit_of_measurement=unit_of_measurement,
         device_class=device_class,
+        data=data or {"UniID": unique_id, "Endpoint": 1},
+        manufacturer="SALUS",
+        model=model,
+        sw_version=None,
         parent_unique_id=parent_unique_id,
         entity_category=entity_category,
-        data=data or {"UniID": unique_id, "Endpoint": 1},
     )
