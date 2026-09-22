@@ -114,14 +114,40 @@ def _async_register_gateway_device(
         gateway_info: Device info from gateway.get_gateway_device()
     """
     device_registry = dr.async_get(hass)
-    device_registry.async_get_or_create(
+    device = device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        connections={(dr.CONNECTION_NETWORK_MAC, gateway_info.unique_id)},
         identifiers={(DOMAIN, gateway_info.unique_id)},
         manufacturer=gateway_info.manufacturer,
         name=gateway_info.name,
         model=gateway_info.model,
         sw_version=gateway_info.sw_version,
+    )
+    _async_remove_stale_mac_connection(
+        device_registry,
+        device,
+        gateway_info.unique_id,
+    )
+
+
+def _async_remove_stale_mac_connection(
+    device_registry: dr.DeviceRegistry,
+    device: dr.DeviceEntry,
+    gateway_unique_id: str,
+) -> None:
+    """Drop the MAC connection earlier versions stored for the gateway.
+
+    The gateway EUID is a ZigBee EUI-64, not a MAC address, so registering it
+    under CONNECTION_NETWORK_MAC described the device incorrectly. Identifiers
+    still match the existing device, so removing the connection keeps it and
+    its entities intact.
+    """
+    stale_connections = {(dr.CONNECTION_NETWORK_MAC, gateway_unique_id)}
+    if not stale_connections & device.connections:
+        return
+
+    device_registry.async_update_device(
+        device.id,
+        new_connections=device.connections - stale_connections,
     )
 
 

@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_TOKEN
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import device_registry as dr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from salus_it600.exceptions import IT600ConnectionError
 
@@ -187,3 +188,82 @@ async def test_changing_options_reloads_the_entry(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
         assert entry.runtime_data.coordinator.update_interval == timedelta(seconds=45)
+
+
+async def test_gateway_device_has_no_mac_connection(hass: HomeAssistant) -> None:
+    """The gateway EUID is a ZigBee EUI-64, not a MAC address."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.0.2.10", CONF_TOKEN: "001E5E0D32906128"},
+    )
+    entry.add_to_hass(hass)
+
+    with patch.object(salus_init, "IT600Gateway", FakeGateway):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    device_registry = dr.async_get(hass)
+    device = device_registry.async_get_device(identifiers={(DOMAIN, "gateway-1")})
+
+    assert device is not None
+    assert device.connections == set()
+    assert device.model == "UGE600"
+
+
+async def test_setup_drops_the_mac_connection_written_by_older_versions(
+    hass: HomeAssistant,
+) -> None:
+    """An existing gateway device keeps its identity, minus the bogus connection."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.0.2.10", CONF_TOKEN: "001E5E0D32906128"},
+    )
+    entry.add_to_hass(hass)
+
+    device_registry = dr.async_get(hass)
+    existing = device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        connections={(dr.CONNECTION_NETWORK_MAC, "gateway-1")},
+        identifiers={(DOMAIN, "gateway-1")},
+        manufacturer="SALUS",
+        name="Gateway",
+    )
+    assert existing.connections == {(dr.CONNECTION_NETWORK_MAC, "gateway-1")}
+
+    with patch.object(salus_init, "IT600Gateway", FakeGateway):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    device = device_registry.async_get_device(identifiers={(DOMAIN, "gateway-1")})
+
+    assert device is not None
+    assert device.id == existing.id  # same device, not a replacement
+    assert device.connections == set()
+
+
+async def test_setup_keeps_unrelated_connections(hass: HomeAssistant) -> None:
+    """Only the EUID-as-MAC entry is removed, not connections from elsewhere."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.0.2.10", CONF_TOKEN: "001E5E0D32906128"},
+    )
+    entry.add_to_hass(hass)
+
+    real_mac = (dr.CONNECTION_NETWORK_MAC, "00:1e:5e:0d:32:90")
+    device_registry = dr.async_get(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        connections={(dr.CONNECTION_NETWORK_MAC, "gateway-1"), real_mac},
+        identifiers={(DOMAIN, "gateway-1")},
+        manufacturer="SALUS",
+        name="Gateway",
+    )
+
+    with patch.object(salus_init, "IT600Gateway", FakeGateway):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    device = device_registry.async_get_device(identifiers={(DOMAIN, "gateway-1")})
+
+    assert device is not None
+    assert device.connections == {real_mac}
