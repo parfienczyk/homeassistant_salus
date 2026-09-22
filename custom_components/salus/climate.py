@@ -12,7 +12,7 @@ from homeassistant.components.climate.const import (
     HVACMode,
 )
 from homeassistant.const import ATTR_TEMPERATURE
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from salus_it600.const import HoldType
 from salus_it600.device_models import (
     SQ610_HOLD_AUTO,
@@ -126,6 +126,8 @@ class SalusThermostat(SalusEntity, ClimateEntity):
         self._sq610_supports_cooling = False
         self._sq610_logged_unknown_hold_types: set[str] = set()
         self._fc600_resume_preset_mode: str | None = None
+        self._view_cache: ClimateViewState | None = None
+        self._view_cache_device: Any = None
 
     @property
     def _is_sq610(self) -> bool:
@@ -140,7 +142,34 @@ class SalusThermostat(SalusEntity, ClimateEntity):
 
     @property
     def _view(self) -> ClimateViewState:
-        """Return the Home Assistant-facing climate view state."""
+        """Return the Home Assistant-facing climate view state.
+
+        Home Assistant reads a dozen climate properties for every state write,
+        so the view is built once per device snapshot. Snapshots are rebuilt by
+        the client on each poll, which makes identity a safe cache key.
+        """
+        device = self._device
+        if self._view_cache is not None and self._view_cache_device is device:
+            return self._view_cache
+
+        view = self._build_view(device)
+        self._view_cache = view
+        self._view_cache_device = device
+        return view
+
+    def _invalidate_view_cache(self) -> None:
+        """Drop the cached view so the next read rebuilds it."""
+        self._view_cache = None
+        self._view_cache_device = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Rebuild the cached view from the snapshot this poll delivered."""
+        self._invalidate_view_cache()
+        super()._handle_coordinator_update()
+
+    def _build_view(self, device: Any | None) -> ClimateViewState:
+        """Build the Home Assistant-facing state for one device snapshot."""
         resume_preset_mode = None
         known_supports_cooling = False
         fc600_resume_preset_mode = None
@@ -153,7 +182,7 @@ class SalusThermostat(SalusEntity, ClimateEntity):
             self._remember_current_fc600_preset()
             fc600_resume_preset_mode = self._fc600_resume_preset_mode
         return build_climate_view_state(
-            self._device,
+            device,
             sq610_resume_preset_mode=resume_preset_mode,
             sq610_known_supports_cooling=known_supports_cooling,
             fc600_resume_preset_mode=fc600_resume_preset_mode,
@@ -346,6 +375,10 @@ class SalusThermostat(SalusEntity, ClimateEntity):
             self._sq610_resume_preset_mode = preset_mode
         elif self._is_fc600 and preset_mode in FC600_RESUME_PRESET_TO_RAW:
             self._fc600_resume_preset_mode = preset_mode
+        else:
+            return
+        # The resume preset feeds the view, so drop the snapshot-keyed cache.
+        self._invalidate_view_cache()
 
     def _sq610_snapshot_supports_cooling(self) -> bool:
         """Return whether the current SQ610 snapshot proves cooling support."""

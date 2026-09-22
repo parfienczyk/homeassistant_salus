@@ -306,3 +306,29 @@ async def test_cancel_debounced_refresh_is_safe_without_pending_task(
 
     assert coordinator._debounced_refresh_task is None
     assert coordinator._post_command_refresh_requested_at is None
+
+
+async def test_poll_timeout_excludes_gateway_lock_wait(
+    hass: HomeAssistant,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A command holding the gateway lock must not consume the poll timeout."""
+    monkeypatch.setattr(
+        "custom_components.salus.coordinator.GATEWAY_OPERATION_TIMEOUT_SECONDS",
+        0.2,
+    )
+    gateway = FakeGateway()
+    coordinator = _coordinator(hass, gateway)
+
+    async def hold_lock() -> None:
+        async with coordinator.gateway_lock:
+            await asyncio.sleep(0.5)
+
+    holder = asyncio.create_task(hold_lock())
+    await asyncio.sleep(0)
+
+    data = await coordinator._async_update_data()
+
+    await holder
+    assert set(data.climate_devices) == {"sq610-1"}
+    assert coordinator._gateway_health.failed_updates == 0

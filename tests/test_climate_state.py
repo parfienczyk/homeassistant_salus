@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from types import SimpleNamespace
 from typing import Any
 
@@ -35,6 +36,7 @@ from salus_it600.device_models import (
     SQ610_RUNNING_HEAT,
 )
 
+from custom_components.salus import _climate_state as climate_state
 from custom_components.salus._climate_state import (
     PRESET_AWAY,
     PRESET_ECO,
@@ -473,3 +475,40 @@ def test_fc600_reported_schedule_override_is_in_preset_modes_without_hold_type()
         PRESET_SCHEDULE_OVERRIDE,
         PRESET_ECO,
     ]
+
+
+def test_unknown_hvac_action_warns_once_per_value(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The warning sits on a hot state-read path, so it must not repeat."""
+    climate_state._LOGGED_UNKNOWN_HVAC_ACTIONS.clear()
+    device = _device(hvac_action="warp drive", preset_mode="Permanent Hold")
+
+    with caplog.at_level(logging.WARNING):
+        for _ in range(5):
+            build_climate_view_state(device)
+
+    warnings = [
+        record
+        for record in caplog.records
+        if "Unknown Salus HVAC action" in record.message
+    ]
+    assert len(warnings) == 1
+    assert "warp drive" in warnings[0].getMessage()
+
+
+def test_unknown_hvac_action_warns_for_each_distinct_value(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    climate_state._LOGGED_UNKNOWN_HVAC_ACTIONS.clear()
+
+    with caplog.at_level(logging.WARNING):
+        build_climate_view_state(_device(hvac_action="warp drive"))
+        build_climate_view_state(_device(hvac_action="hyperdrive"))
+
+    warnings = [
+        record
+        for record in caplog.records
+        if "Unknown Salus HVAC action" in record.message
+    ]
+    assert len(warnings) == 2

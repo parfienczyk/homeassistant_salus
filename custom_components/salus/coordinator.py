@@ -304,8 +304,11 @@ class SalusDataUpdateCoordinator(DataUpdateCoordinator[SalusData]):
     async def _async_update_data(self) -> SalusData:
         """Fetch all Salus device data from the gateway."""
         try:
-            async with asyncio.timeout(GATEWAY_OPERATION_TIMEOUT_SECONDS):
-                async with self.gateway_lock:
+            # The lock is taken outside the timeout: waiting for an in-flight
+            # user command must not eat into the gateway I/O budget, or a
+            # healthy gateway gets reported as unavailable.
+            async with self.gateway_lock:
+                async with asyncio.timeout(GATEWAY_OPERATION_TIMEOUT_SECONDS):
                     await self.gateway.poll_status()
                     climate_devices = dict(self.gateway.get_climate_devices() or {})
 

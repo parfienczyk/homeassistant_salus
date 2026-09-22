@@ -42,6 +42,7 @@ from custom_components.salus._climate_state import (
 from custom_components.salus.climate import SalusThermostat
 from custom_components.salus.const import DOMAIN
 from custom_components.salus.coordinator import SalusData
+from custom_components.salus.entity import SalusEntity
 from tests.conftest import FakeCoordinator, make_climate_device, make_fc600_device
 
 
@@ -91,6 +92,16 @@ def _normalized_sq610_device(device, fields):
     else:
         device.target_temperature = device.heating_setpoint
     return device
+
+
+def _deliver_poll(entity) -> None:
+    """Simulate a poll delivering the fake device's current state.
+
+    The client rebuilds device snapshots on every poll, so an entity only sees
+    changed device state through a coordinator update. The fakes mutate one
+    long-lived object instead, and this stands in for that update.
+    """
+    entity._invalidate_view_cache()
 
 
 def _set_sq610_hold(device, hold_type: int) -> None:
@@ -488,12 +499,15 @@ class TestSQ610Commands:
         await entity.async_set_temperature(temperature=23.5)
 
         device.target_temperature = 22.0
+        _deliver_poll(entity)
         assert entity.target_temperature == 23.5
 
         device.target_temperature = 23.5
+        _deliver_poll(entity)
         assert entity.target_temperature == 23.5
 
         device.target_temperature = 19.0
+        _deliver_poll(entity)
         assert entity.target_temperature == 19.0
 
     async def test_set_temperature_no_value_is_noop(self):
@@ -681,9 +695,11 @@ class TestSQ610Commands:
         assert entity.preset_mode == PRESET_FOLLOW_SCHEDULE
 
         _set_sq610_hold(device, SQ610_HOLD_AUTO)
+        _deliver_poll(entity)
         assert entity.preset_mode == PRESET_FOLLOW_SCHEDULE
 
         _set_sq610_hold(device, SQ610_HOLD_PERMANENT)
+        _deliver_poll(entity)
         assert entity.preset_mode == PRESET_PERMANENT_HOLD
 
     async def test_schedule_override_is_report_only_when_active(self):
@@ -722,11 +738,13 @@ class TestSQ610Commands:
         assert entity.preset_mode == PRESET_PERMANENT_HOLD
 
         _set_sq610_hold(device, SQ610_HOLD_AUTO)
+        _deliver_poll(entity)
 
         assert entity.preset_mode == PRESET_FOLLOW_SCHEDULE
 
         await entity.async_set_hvac_mode(HVACMode.OFF)
         _set_sq610_hold(device, SQ610_HOLD_STANDBY)
+        _deliver_poll(entity)
         await entity.async_set_hvac_mode(HVACMode.HEAT)
 
         _assert_gateway_calls(
@@ -915,9 +933,11 @@ class TestFC600Commands:
         assert entity.fan_mode == "high"
 
         device.fan_mode = "High"
+        _deliver_poll(entity)
         assert entity.fan_mode == "high"
 
         device.fan_mode = "Auto"
+        _deliver_poll(entity)
         assert entity.fan_mode == "auto"
 
     async def test_unrelated_fan_mode_does_not_cancel_debounced_temperature(
@@ -1148,3 +1168,74 @@ class TestPresetCapabilityGating:
         await entity.async_set_preset_mode(PRESET_ECO)
 
         _assert_gateway_calls(coord)  # no gateway calls
+
+
+class TestViewCaching:
+    """The view feeds a dozen properties, so it is built once per snapshot."""
+
+    def _read_all_view_properties(self, entity) -> None:
+        for name in (
+            "supported_features",
+            "hvac_mode",
+            "hvac_modes",
+            "hvac_action",
+            "current_temperature",
+            "current_humidity",
+            "target_temperature",
+            "preset_mode",
+            "preset_modes",
+            "fan_mode",
+            "fan_modes",
+        ):
+            getattr(entity, name)
+
+    def _count_builds(self, entity) -> list[object]:
+        builds: list[object] = []
+        build_view = entity._build_view
+
+        def counting_build_view(device):
+            builds.append(device)
+            return build_view(device)
+
+        entity._build_view = counting_build_view
+        return builds
+
+    async def test_view_is_built_once_per_snapshot(self):
+        _, _, entity = _thermostat()
+        builds = self._count_builds(entity)
+
+        for _ in range(3):
+            self._read_all_view_properties(entity)
+
+        assert len(builds) == 1
+
+    async def test_view_is_rebuilt_after_a_new_poll(self):
+        device, _, entity = _thermostat(make_fc600_device())
+        builds = self._count_builds(entity)
+
+        self._read_all_view_properties(entity)
+        assert entity.fan_mode == "auto"
+
+        device.fan_mode = "High"
+        _deliver_poll(entity)
+
+        assert entity.fan_mode == "high"
+        assert len(builds) == 2
+
+    async def test_coordinator_update_invalidates_the_cached_view(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        _, _, entity = _thermostat()
+        monkeypatch.setattr(
+            SalusEntity,
+            "_handle_coordinator_update",
+            lambda self: None,
+        )
+
+        assert entity.hvac_mode is not None
+        assert entity._view_cache is not None
+
+        entity._handle_coordinator_update()
+
+        assert entity._view_cache is None

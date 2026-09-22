@@ -70,6 +70,7 @@ RAW_TO_HA_FAN_MODE = {
 HA_TO_RAW_FAN_MODE = {value: key for key, value in RAW_TO_HA_FAN_MODE.items()}
 
 COOLING_ACTIONS = {"cooling", "cooling (idling)"}
+_LOGGED_UNKNOWN_HVAC_ACTIONS: set[str] = set()
 RAW_HVAC_ACTION_TO_HA = {
     "off": HVACAction.OFF,
     "heating": HVACAction.HEATING,
@@ -254,8 +255,21 @@ def _normalize_hvac_action(action: Any) -> HVACAction | None:
     if action in RAW_HVAC_ACTION_TO_HA:
         return RAW_HVAC_ACTION_TO_HA[action]
     if action is not None:
-        _LOGGER.warning("Unknown Salus HVAC action: %s", action)
+        _log_unknown_hvac_action(action)
     return None
+
+
+def _log_unknown_hvac_action(action: Any) -> None:
+    """Warn once per distinct unknown action.
+
+    This runs on every climate state read, so an unmapped action from one
+    device would otherwise repeat on every poll and every property access.
+    """
+    action_key = repr(action)
+    if action_key in _LOGGED_UNKNOWN_HVAC_ACTIONS:
+        return
+    _LOGGED_UNKNOWN_HVAC_ACTIONS.add(action_key)
+    _LOGGER.warning("Unknown Salus HVAC action: %s", action)
 
 
 def _supports_cooling(device: Any | None) -> bool:
