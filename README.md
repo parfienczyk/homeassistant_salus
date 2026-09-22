@@ -6,11 +6,16 @@
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.8%2B-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
 [![License](https://img.shields.io/github/license/parfienczyk/homeassistant_salus)](#license)
 
-A custom [Home Assistant](https://www.home-assistant.io/) integration that lets you control and monitor your [Salus iT600](https://salus-controls.com/) smart home devices **locally** through the UGE600 or UG800 gateway — thermostats, smart plugs, roller shutters, sensors, and more, all without cloud dependency.
+Lokalna integracja [Home Assistant](https://www.home-assistant.io/) dla urządzeń [Salus iT600](https://salus-controls.com/) przez bramkę UGE600 lub UG800 — termostaty, gniazdka, rolety, czujniki i inne, bez chmury.
 
-This is [`parfienczyk/homeassistant_salus`](https://github.com/parfienczyk/homeassistant_salus): a personal fork of [`Jordi-14/homeassistant_salus`](https://github.com/Jordi-14/homeassistant_salus) with **Polish translations**. Issues and HACS installs for this copy go here. YAML `climate:` / `binary_sensor:` platform configuration from the 2020 snapshot is no longer supported — add **Salus iT600** from **Settings → Devices & Services**.
+This is [`parfienczyk/homeassistant_salus`](https://github.com/parfienczyk/homeassistant_salus), a personal fork of [`Jordi-14/homeassistant_salus`](https://github.com/Jordi-14/homeassistant_salus). Version **0.9.4**, client `salus-it600-client==0.6.1`. UI languages: English, Catalan, and **Polish**. Issues and HACS installs for this copy go here.
 
-Existing UI config entries keep the `salus` domain, so a folder swap plus Home Assistant restart should preserve host, EUID, and entity registry records. Copy the inner `custom_components/salus` folder into `config/custom_components/salus`; do not clone this whole repository into that path.
+## This repository
+
+- Domain stays `salus`. Existing UI config entries (gateway IP + EUID) should survive a folder swap and Home Assistant restart.
+- YAML `climate:` / `binary_sensor:` platform config from the 2020 snapshot **no longer works**. Add the integration from **Settings → Devices & Services**.
+- Install the inner `custom_components/salus` folder (or HACS). Do **not** clone this whole git repository into `config/custom_components/salus`.
+- Protocol code lives in [`salus-it600-client`](https://github.com/Jordi-14/salus-it600-client). Upstream integration development is at [Jordi-14/homeassistant_salus](https://github.com/Jordi-14/homeassistant_salus).
 
 ## Features
 
@@ -72,7 +77,7 @@ One lock entity per thermostat that supports child lock. Allows **locking/unlock
 
 ## Installation
 
-Minimum supported Home Assistant version: `2024.8.0`.
+Minimum Home Assistant version: **2024.8.0**. Integration version: **0.9.4**.
 
 ### HACS (recommended)
 
@@ -82,10 +87,14 @@ Minimum supported Home Assistant version: `2024.8.0`.
 4. Search for **Salus iT600** and install it.
 5. Restart Home Assistant.
 
+If you previously used `konradb3/homeassistant_salus`, `epoplavskis/homeassistant_salus`, or `Jordi-14/homeassistant_salus` in HACS, remove that custom repository first, then add this one. See [docs/migration-from-older-forks.md](docs/migration-from-older-forks.md).
+
 ### Manual
 
-1. Copy the `custom_components/salus` folder into your Home Assistant `config/custom_components/` directory.
+1. Copy **only** `custom_components/salus` from this repository into Home Assistant `config/custom_components/salus`.
 2. Restart Home Assistant.
+
+The result must look like `config/custom_components/salus/manifest.json`, not `config/custom_components/salus/custom_components/salus/manifest.json`.
 
 ## Configuration
 
@@ -194,10 +203,11 @@ This method is useful for one-off troubleshooting since it automatically reverts
 
 Diagnostics include integration version, gateway health counters, device counts,
 availability history, and shared climate diagnostics with normalized fields plus
-whitelisted support fields for each thermostat. The gateway EUID/token is
-redacted automatically.
+whitelisted support fields for each thermostat. The gateway token is redacted
+automatically.
 
-Review the file before posting publicly — it may contain your gateway IP and device IDs.
+Review the file before posting publicly — it may still contain your gateway IP,
+device IDs, and the gateway unique id.
 
 For support requests, include:
 
@@ -238,13 +248,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for architecture, testing, and platform d
 
 Release publishing is documented in [RELEASE.md](RELEASE.md).
 
-## Migration from `pyit600`
+## Migration from the 2020 snapshot / `pyit600`
 
-This integration uses `salus-it600-client`, a maintained successor of the original `pyit600` library. Existing Home Assistant config entries keep the same `salus` integration domain, so normal HACS updates only require a restart.
+This integration uses `salus-it600-client==0.6.1`, a maintained successor of `pyit600`. The Home Assistant domain is still `salus`.
 
-The exact client version is pinned in `custom_components/salus/manifest.json`.
+If you are upgrading from this repository's 2020 layout (Python files in the repo root, `pyit600==0.1.3`, YAML platforms):
 
-If you are moving from another fork or an older custom repository entry, see
+1. Remove YAML `climate:` / `binary_sensor:` `platform: salus` blocks.
+2. Replace `config/custom_components/salus` with the inner `custom_components/salus` folder from this tree.
+3. Restart Home Assistant. Add **Salus iT600** from the UI if it was YAML-only before.
+
+If you are moving from another HACS fork, see
 [docs/migration-from-older-forks.md](docs/migration-from-older-forks.md).
 
 ## Project origin
