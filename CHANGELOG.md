@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.10.0 - 2026-09-22
+
+First release of this fork of Jordi-14 `homeassistant_salus` 0.9.4.
+
+- Add Polish UI translations.
+- Point documentation, HACS, and the issue tracker at this repository.
+- Drop stale MAC connections previously registered on the Salus gateway device.
+- Keep vanished devices available in diagnostics until the gateway reports them
+  again.
+- Exclude gateway-lock wait time from operation timeouts.
+- Clear runtime data when config-entry setup fails.
+- Pin CI to Ubuntu 24.04 and current GitHub Actions.
+
+Client: `salus-it600-client==0.6.1`.
+
 ## 0.9.4 - 2026-07-01
 
 Bug fixes:

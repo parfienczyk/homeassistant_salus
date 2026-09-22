@@ -8,7 +8,7 @@
 
 Lokalna integracja [Home Assistant](https://www.home-assistant.io/) dla urządzeń [Salus iT600](https://salus-controls.com/) przez bramkę UGE600 lub UG800 — termostaty, gniazdka, rolety, czujniki i inne, bez chmury.
 
-This is [`parfienczyk/homeassistant_salus`](https://github.com/parfienczyk/homeassistant_salus), a personal fork of [`Jordi-14/homeassistant_salus`](https://github.com/Jordi-14/homeassistant_salus). Version **0.9.4**, client `salus-it600-client==0.6.1`. UI languages: English, Catalan, and **Polish**. Issues and HACS installs for this copy go here.
+This is [`parfienczyk/homeassistant_salus`](https://github.com/parfienczyk/homeassistant_salus), a personal fork of [`Jordi-14/homeassistant_salus`](https://github.com/Jordi-14/homeassistant_salus). Version **0.10.0**, client `salus-it600-client==0.6.1`. UI languages: English, Catalan, and **Polish**. Issues and HACS installs for this copy go here.
 
 ## This repository
 
@@ -77,7 +77,7 @@ One lock entity per thermostat that supports child lock. Allows **locking/unlock
 
 ## Installation
 
-Minimum Home Assistant version: **2024.8.0**. Integration version: **0.9.4**.
+Minimum Home Assistant version: **2024.8.0**. Integration version: **0.10.0**.
 
 ### HACS (recommended)
 
