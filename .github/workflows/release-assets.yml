@@ -15,12 +15,12 @@ permissions:
 jobs:
   hacs-zip:
     name: HACS ZIP
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       TAG_NAME: ${{ github.event.release.tag_name || inputs.tag }}
     steps:
       - name: Check out release tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG_NAME }}
 
