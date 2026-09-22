@@ -39,6 +39,7 @@ jobs:
           python -m json.tool custom_components/salus/strings.json > /dev/null
           python -m json.tool custom_components/salus/translations/en.json > /dev/null
           python -m json.tool custom_components/salus/translations/ca.json > /dev/null
+          python -m json.tool custom_components/salus/translations/pl.json > /dev/null
       - name: Run tests
         run: python -m pytest tests/ -v --cov=custom_components/salus --cov-report=term-missing
       - name: Compile Python files

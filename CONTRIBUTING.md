@@ -4,7 +4,7 @@ This document covers development, testing, and pull-request preparation for `hom
 
 Public repositories:
 
-- Home Assistant integration: `https://github.com/Jordi-14/homeassistant_salus`
+- Home Assistant integration: `https://github.com/parfienczyk/homeassistant_salus`
 - Client package: `https://github.com/Jordi-14/salus-it600-client`
 
 End-user installation, setup, troubleshooting, and diagnostics guidance live in [README.md](README.md). Release policy lives in [RELEASE.md](RELEASE.md).
@@ -23,13 +23,13 @@ Gateway protocol parsing, encryption, device models, and low-level commands belo
 
 ## Fork Workflow
 
-If you do not have permission to push branches to `Jordi-14/homeassistant_salus`, fork the repository and push your feature branch to your fork. Open the pull request back to `Jordi-14/homeassistant_salus`.
+If you do not have permission to push branches to `parfienczyk/homeassistant_salus`, fork the repository and push your feature branch to your fork. Open the pull request back to `parfienczyk/homeassistant_salus`.
 
 The branch-testing examples use owner placeholders:
 
-- `<integration-owner>`: `Jordi-14` for maintainers, or your GitHub username for
+- `<integration-owner>`: `parfienczyk` for this repository, or your GitHub username for
   integration fork branches.
-- `<client-owner>`: `Jordi-14` for maintainers, or your GitHub username for
+- `<client-owner>`: `Jordi-14` for the client library, or your GitHub username for
   client fork branches.
 
 ## Licensing Contributions

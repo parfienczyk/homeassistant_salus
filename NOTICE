@@ -1,6 +1,14 @@
 Salus iT600 Home Assistant integration
 
-This project is a maintained fork/successor of:
+This repository is maintained at:
+
+- https://github.com/parfienczyk/homeassistant_salus
+
+It is based on the maintained successor:
+
+- https://github.com/Jordi-14/homeassistant_salus
+
+which itself is a fork/successor of:
 
 - https://github.com/konradb3/homeassistant_salus
 - https://github.com/epoplavskis/homeassistant_salus

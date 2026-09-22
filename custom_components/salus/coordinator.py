@@ -38,7 +38,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 ISSUE_GATEWAY_UNAVAILABLE = "gateway_unavailable"
-TROUBLESHOOTING_URL = "https://github.com/Jordi-14/homeassistant_salus#troubleshooting"
+TROUBLESHOOTING_URL = "https://github.com/parfienczyk/homeassistant_salus#troubleshooting"
 
 
 def _utcnow_iso() -> str:

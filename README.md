@@ -1,18 +1,14 @@
 # Salus iT600 for Home Assistant
 
-[![CI](https://github.com/Jordi-14/homeassistant_salus/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Jordi-14/homeassistant_salus/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/Jordi-14/homeassistant_salus?display_name=tag)](https://github.com/Jordi-14/homeassistant_salus/releases)
+[![CI](https://github.com/parfienczyk/homeassistant_salus/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/parfienczyk/homeassistant_salus/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/parfienczyk/homeassistant_salus?display_name=tag)](https://github.com/parfienczyk/homeassistant_salus/releases)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.8%2B-41BDF5?logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
-[![License](https://img.shields.io/github/license/Jordi-14/homeassistant_salus)](#license)
+[![License](https://img.shields.io/github/license/parfienczyk/homeassistant_salus)](#license)
 
 A custom [Home Assistant](https://www.home-assistant.io/) integration that lets you control and monitor your [Salus iT600](https://salus-controls.com/) smart home devices **locally** through the UGE600 or UG800 gateway — thermostats, smart plugs, roller shutters, sensors, and more, all without cloud dependency.
 
-## This fork
-
-This repository is a fork of [`Jordi-14/homeassistant_salus`](https://github.com/Jordi-14/homeassistant_salus) with **Polish translations**. Integration metadata, issue tracker, and HACS releases remain with upstream.
-
-Install from HACS using the upstream repository unless you specifically want this fork's `pl` translations. YAML `climate:` / `binary_sensor:` platform configuration from the 2020 snapshot is no longer supported — add **Salus iT600** from **Settings → Devices & Services**.
+This is [`parfienczyk/homeassistant_salus`](https://github.com/parfienczyk/homeassistant_salus): a personal fork of [`Jordi-14/homeassistant_salus`](https://github.com/Jordi-14/homeassistant_salus) with **Polish translations**. Issues and HACS installs for this copy go here. YAML `climate:` / `binary_sensor:` platform configuration from the 2020 snapshot is no longer supported — add **Salus iT600** from **Settings → Devices & Services**.
 
 Existing UI config entries keep the `salus` domain, so a folder swap plus Home Assistant restart should preserve host, EUID, and entity registry records. Copy the inner `custom_components/salus` folder into `config/custom_components/salus`; do not clone this whole repository into that path.
 
@@ -82,7 +78,7 @@ Minimum supported Home Assistant version: `2024.8.0`.
 
 1. Open HACS in your Home Assistant instance.
 2. Go to **Integrations** → **⋮** → **Custom repositories**.
-3. Add `https://github.com/Jordi-14/homeassistant_salus` as an **Integration**.
+3. Add `https://github.com/parfienczyk/homeassistant_salus` as an **Integration**.
 4. Search for **Salus iT600** and install it.
 5. Restart Home Assistant.
 
@@ -253,9 +249,9 @@ If you are moving from another fork or an older custom repository entry, see
 
 ## Project origin
 
-This repository is a fork of [`epoplavskis/homeassistant_salus`](https://github.com/epoplavskis/homeassistant_salus), which is a fork of [`konradb3/homeassistant_salus`](https://github.com/konradb3/homeassistant_salus).
+This repository is a fork of [`Jordi-14/homeassistant_salus`](https://github.com/Jordi-14/homeassistant_salus), which is a fork of [`epoplavskis/homeassistant_salus`](https://github.com/epoplavskis/homeassistant_salus), originally from [`konradb3/homeassistant_salus`](https://github.com/konradb3/homeassistant_salus).
 
-It incorporates and reworks feature ideas from Leonard Pitzu's [`leonardpitzu/homeassistant_salus`](https://github.com/leonardpitzu/homeassistant_salus) fork, including broader device coverage, UG800/new-firmware support, TRV-related entities, SQ610 improvements, smart-plug metering, and thermostat lock support. Leonard Pitzu has since joined development here, and his fork has been retired.
+It incorporates and reworks feature ideas from Leonard Pitzu's [`leonardpitzu/homeassistant_salus`](https://github.com/leonardpitzu/homeassistant_salus) fork, including broader device coverage, UG800/new-firmware support, TRV-related entities, SQ610 improvements, smart-plug metering, and thermostat lock support.
 
 Protocol and parsing logic lives in the reusable [`salus-it600-client`](https://github.com/Jordi-14/salus-it600-client) library. This repository exposes those capabilities through Home Assistant entities, diagnostics, options, repairs, and translations.
 

@@ -16,7 +16,7 @@ That helps preserve gateway configuration and existing entity registry records.
 1. Open HACS.
 2. Go to **Integrations** -> **Custom repositories**.
 3. Remove the old `homeassistant_salus` fork URL if it is still present.
-4. Add `https://github.com/Jordi-14/homeassistant_salus` as an **Integration**.
+4. Add `https://github.com/parfienczyk/homeassistant_salus` as an **Integration**.
 5. Install or update **Salus iT600** from the new repository entry.
 6. Restart Home Assistant.
 7. Open **Settings** -> **Devices & Services** and confirm the Salus iT600 integration loads.
