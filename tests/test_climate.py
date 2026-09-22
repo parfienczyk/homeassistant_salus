@@ -1239,3 +1239,35 @@ class TestViewCaching:
         entity._handle_coordinator_update()
 
         assert entity._view_cache is None
+
+
+class TestPostCommandRefresh:
+    """Every climate write asks for the same post-command refresh."""
+
+    async def test_refresh_is_requested_when_device_vanishes_mid_command(self):
+        """A device dropped by a poll mid-command must still trigger a refresh.
+
+        The SQ610 write path used to skip the refresh in exactly this case,
+        which is when a fresh snapshot is needed most.
+        """
+        device, coord, entity = _thermostat()
+        set_preset = coord.gateway.set_climate_device_preset
+
+        async def set_preset_then_drop_device(device_id, preset):
+            await set_preset(device_id, preset)
+            coord.data.climate_devices.pop(device_id)
+
+        coord.gateway.set_climate_device_preset = set_preset_then_drop_device
+
+        await entity.async_set_preset_mode(PRESET_FOLLOW_SCHEDULE)
+
+        assert entity._device is None
+        assert coord.refresh_requests == 1
+
+    @pytest.mark.parametrize("device_factory", [make_climate_device, make_fc600_device])
+    async def test_every_family_requests_one_refresh_per_write(self, device_factory):
+        _, coord, entity = _thermostat(device_factory())
+
+        await entity.async_set_preset_mode(PRESET_FOLLOW_SCHEDULE)
+
+        assert coord.refresh_requests == 1
