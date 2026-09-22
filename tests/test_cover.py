@@ -76,6 +76,26 @@ class TestSalusCoverProperties:
         assert features & CoverEntityFeature.CLOSE
         assert features & CoverEntityFeature.SET_POSITION
 
+    def test_supported_features_is_a_cover_entity_feature(self):
+        """HA deprecates plain integer feature flags, so expose the enum."""
+        device = make_cover_device(supported_features=7)
+        coord = _coordinator_with_covers(device)
+        entity = SalusCover(coord, device.unique_id)
+
+        assert isinstance(entity.supported_features, CoverEntityFeature)
+        assert entity.supported_features == (
+            CoverEntityFeature.OPEN
+            | CoverEntityFeature.CLOSE
+            | CoverEntityFeature.SET_POSITION
+        )
+
+    def test_supported_features_without_a_device_snapshot(self):
+        device = make_cover_device()
+        coord = _coordinator_with_covers(device)
+        entity = SalusCover(coord, "missing-cover")
+
+        assert entity.supported_features == CoverEntityFeature(0)
+
     def test_device_class_shutter_from_rs600_model(self):
         """RS600 models get 'shutter' device class."""
         device = make_cover_device(model="RS600", device_class=None)

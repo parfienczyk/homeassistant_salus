@@ -21,6 +21,7 @@ from custom_components.salus.const import (
     CONF_POLL_FAILURE_THRESHOLD,
     CONF_POST_COMMAND_REFRESH_DELAY,
     CONF_SCAN_INTERVAL,
+    DEVICE_AVAILABILITY_RETENTION_REFRESHES,
 )
 from custom_components.salus.coordinator import (
     SalusDataUpdateCoordinator,
@@ -332,3 +333,42 @@ async def test_poll_timeout_excludes_gateway_lock_wait(
     await holder
     assert set(data.climate_devices) == {"sq610-1"}
     assert coordinator._gateway_health.failed_updates == 0
+
+
+async def test_vanished_device_is_dropped_from_availability_diagnostics(
+    hass: HomeAssistant,
+) -> None:
+    """A device the gateway stopped reporting must not be counted forever."""
+    gateway = FakeGateway()
+    coordinator = _coordinator(hass, gateway)
+
+    await coordinator._async_update_data()
+    assert "sq610-1" in coordinator.device_availability_diagnostics()
+
+    gateway.climate_devices = {}
+
+    for expected_misses in range(1, DEVICE_AVAILABILITY_RETENTION_REFRESHES):
+        await coordinator._async_update_data()
+        diagnostics = coordinator.device_availability_diagnostics()
+        assert diagnostics["sq610-1"]["online_status_source"] == "missing_from_snapshot"
+        assert (
+            diagnostics["sq610-1"]["consecutive_missed_refreshes"] == expected_misses
+        )
+
+    await coordinator._async_update_data()
+
+    assert coordinator.device_availability_diagnostics() == {}
+
+
+async def test_present_but_unavailable_device_is_kept(hass: HomeAssistant) -> None:
+    """Retention only drops devices the gateway no longer reports at all."""
+    gateway = FakeGateway()
+    coordinator = _coordinator(hass, gateway)
+    gateway.climate_devices["sq610-1"].available = False
+
+    for _ in range(DEVICE_AVAILABILITY_RETENTION_REFRESHES + 5):
+        await coordinator._async_update_data()
+
+    diagnostics = coordinator.device_availability_diagnostics()
+    assert diagnostics["sq610-1"]["available"] is False
+    assert diagnostics["sq610-1"]["online_status_source"] != "missing_from_snapshot"

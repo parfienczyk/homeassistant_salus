@@ -35,6 +35,10 @@ DEFAULT_POLL_FAILURE_THRESHOLD = 3
 MIN_POLL_FAILURE_THRESHOLD = 0
 MAX_POLL_FAILURE_THRESHOLD = 50
 
+# Consecutive polls a vanished device stays in availability diagnostics before
+# its entry is dropped, so removed devices do not accumulate forever.
+DEVICE_AVAILABILITY_RETENTION_REFRESHES = 30
+
 CONF_POST_COMMAND_REFRESH_DELAY = "post_command_refresh_delay"
 MIN_POST_COMMAND_REFRESH_DELAY = 0.0
 MAX_POST_COMMAND_REFRESH_DELAY = 30.0

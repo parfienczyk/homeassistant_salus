@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.cover import ATTR_POSITION, CoverEntity
+from homeassistant.components.cover import (
+    ATTR_POSITION,
+    CoverEntity,
+    CoverEntityFeature,
+)
 from homeassistant.core import HomeAssistant
 
 from .const import COVER_POSITION_DEBOUNCE_SECONDS
@@ -39,9 +43,9 @@ class SalusCover(SalusEntity, CoverEntity):
     _data_collection = "cover_devices"
 
     @property
-    def supported_features(self) -> int:
+    def supported_features(self) -> CoverEntityFeature:
         """Return the list of supported features."""
-        return self._device_attr("supported_features", 0)
+        return CoverEntityFeature(self._device_attr("supported_features", 0))
 
     @property
     def device_class(self) -> str | None:

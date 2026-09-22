@@ -27,6 +27,7 @@ from .const import (
     DEFAULT_POLL_FAILURE_THRESHOLD,
     DEFAULT_POST_COMMAND_REFRESH_DELAY,
     DEFAULT_SCAN_INTERVAL_SECONDS,
+    DEVICE_AVAILABILITY_RETENTION_REFRESHES,
     DOMAIN,
     GATEWAY_OPERATION_TIMEOUT_SECONDS,
     MAX_POST_COMMAND_REFRESH_DELAY,
@@ -464,7 +465,7 @@ class SalusDataUpdateCoordinator(DataUpdateCoordinator[SalusData]):
                 else:
                     status.consecutive_missed_refreshes += 1
 
-        for device_id, status in self._device_availability.items():
+        for device_id, status in list(self._device_availability.items()):
             if device_id in current_device_ids:
                 continue
 
@@ -473,3 +474,11 @@ class SalusDataUpdateCoordinator(DataUpdateCoordinator[SalusData]):
             status.online_status_source = "missing_from_snapshot"
             status.last_checked_at = checked_at
             status.consecutive_missed_refreshes += 1
+
+            # A device the gateway stopped reporting is gone for good; keep it
+            # around for a while for support, then stop counting it forever.
+            if (
+                status.consecutive_missed_refreshes
+                >= DEVICE_AVAILABILITY_RETENTION_REFRESHES
+            ):
+                del self._device_availability[device_id]
