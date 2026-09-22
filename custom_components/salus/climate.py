@@ -299,8 +299,8 @@ class SalusThermostat(SalusEntity, ClimateEntity):
             return {}
 
         attributes = {
-            "salus_hvac_mode": device.hvac_mode,
-            "salus_preset_mode": device.preset_mode,
+            "salus_hvac_mode": getattr(device, "hvac_mode", None),
+            "salus_preset_mode": getattr(device, "preset_mode", None),
             "salus_hold_type": getattr(device, "hold_type", None),
             "salus_system_mode": getattr(device, "system_mode", None),
             "salus_running_state": getattr(device, "running_state", None),
@@ -648,7 +648,12 @@ class SalusThermostat(SalusEntity, ClimateEntity):
         )
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        """Set the exposed Salus hold mode."""
+        """Set the exposed Salus hold mode.
+
+        PRESET_STANDBY is deliberately absent from `preset_modes`, so Home
+        Assistant rejects it before it reaches here. It stays allowed because
+        `async_turn_off` calls this method directly to enter standby.
+        """
         if preset_mode != PRESET_STANDBY and preset_mode not in self.preset_modes:
             _LOGGER.warning(
                 "Ignoring unsupported preset mode request for %s: %s",

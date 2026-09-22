@@ -57,7 +57,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SalusConfigEntry) -> boo
             runtime_data is not None
             and getattr(entry, "runtime_data", None) is runtime_data
         ):
-            entry.runtime_data = None
+            del entry.runtime_data
         raise
 
     return True

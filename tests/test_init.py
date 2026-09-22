@@ -11,7 +11,9 @@ import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_TOKEN
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from salus_it600.exceptions import IT600ConnectionError
 
 import custom_components.salus as salus_init
 from custom_components.salus import PLATFORMS, async_setup_entry
@@ -116,3 +118,25 @@ async def test_setup_entry_uses_configured_scan_interval(
 
     assert result is True
     assert entry.runtime_data.coordinator.update_interval == timedelta(seconds=45)
+
+
+async def test_failed_setup_closes_gateway_and_clears_runtime_data(
+    hass: HomeAssistant,
+) -> None:
+    """A failed first refresh must not leave a half-initialized entry behind."""
+    FakeGateway.poll_error = IT600ConnectionError("gateway unreachable")
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.0.2.10", CONF_TOKEN: "001E5E0D32906128"},
+        state=ConfigEntryState.SETUP_IN_PROGRESS,
+    )
+    entry.add_to_hass(hass)
+
+    with (
+        patch.object(salus_init, "IT600Gateway", FakeGateway),
+        pytest.raises(ConfigEntryNotReady),
+    ):
+        await async_setup_entry(hass, entry)
+
+    assert FakeGateway.instances[0].closed is True
+    assert not hasattr(entry, "runtime_data")
