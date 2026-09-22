@@ -23,8 +23,15 @@ DEFAULT_POST_COMMAND_REFRESH_DELAY = 5.0
 CONNECT_RETRIES = 3
 CONNECT_RETRY_DELAY = 3
 
-# Timeout applied to a single gateway operation (connect or status poll).
-GATEWAY_OPERATION_TIMEOUT_SECONDS = 10
+# Timeout applied to a single gateway connect.
+GATEWAY_CONNECT_TIMEOUT_SECONDS = 10
+
+# A poll issues one request per device family, so a fixed 10 s can be too tight
+# on larger installations. The poll timeout scales with the scan interval, but
+# always leaves room to finish before the next poll is due.
+POLL_TIMEOUT_MARGIN_SECONDS = 2
+MIN_POLL_TIMEOUT_SECONDS = 10
+MAX_POLL_TIMEOUT_SECONDS = 60
 
 # Debounce windows that collapse rapid slider/setpoint changes into one write.
 TARGET_TEMPERATURE_DEBOUNCE_SECONDS = 0.3

@@ -24,6 +24,6 @@ branch = true
 source = ["custom_components/salus"]
 
 [tool.coverage.report]
-fail_under = 60
+fail_under = 80
 show_missing = true
 skip_covered = true

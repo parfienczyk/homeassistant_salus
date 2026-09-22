@@ -126,7 +126,10 @@ class FakeGateway:
     def get_sensor_devices(self) -> dict[str, Any]:
         return {}
 
-async def test_diagnostics_redacts_token_and_reports_health(hass: HomeAssistant) -> None:
+
+async def test_diagnostics_redacts_token_and_reports_health(
+    hass: HomeAssistant,
+) -> None:
     gateway = FakeGateway()
     entry = MagicMock()
     entry.entry_id = "entry-1"
@@ -151,33 +154,52 @@ async def test_diagnostics_redacts_token_and_reports_health(hass: HomeAssistant)
     assert diagnostics["runtime"]["loaded"] is True
     assert diagnostics["device_counts"]["climate"] == 2
     assert diagnostics["gateway"]["health"]["successful_updates"] == 1
-    assert diagnostics["climate"]["devices"]["sq610-1"]["support_fields"][
-        "LockKey"
-    ] == 1
-    assert diagnostics["climate"]["devices"]["sq610-1"]["support_fields"][
-        "LockKey_a"
-    ] == 1
-    assert diagnostics["climate"]["devices"]["sq610-1"]["support_fields"][
-        "CoolingControl"
-    ] == 0
-    assert diagnostics["climate"]["devices"]["sq610-1"]["support_fields"][
-        "HeatingSetpoint_x100"
-    ] == 2200
-    assert diagnostics["climate"]["devices"]["sq610-1"]["support_fields"][
-        "SunnySetpoint_x100"
-    ] == 4550
-    assert diagnostics["climate"]["devices"]["sq610-1"]["normalized_fields"][
-        "current_humidity"
-    ] == 45.5
-    assert diagnostics["climate"]["devices"]["sq610-1"]["normalized_fields"][
-        "supports_cooling"
-    ] is True
-    assert diagnostics["climate"]["devices"]["fc600-1"]["support_fields"][
-        "CoolingSetpoint_x100"
-    ] == 2300
-    assert diagnostics["climate"]["devices"]["fc600-1"]["normalized_fields"][
-        "supports_fan"
-    ] is True
+    assert (
+        diagnostics["climate"]["devices"]["sq610-1"]["support_fields"]["LockKey"] == 1
+    )
+    assert (
+        diagnostics["climate"]["devices"]["sq610-1"]["support_fields"]["LockKey_a"] == 1
+    )
+    assert (
+        diagnostics["climate"]["devices"]["sq610-1"]["support_fields"]["CoolingControl"]
+        == 0
+    )
+    assert (
+        diagnostics["climate"]["devices"]["sq610-1"]["support_fields"][
+            "HeatingSetpoint_x100"
+        ]
+        == 2200
+    )
+    assert (
+        diagnostics["climate"]["devices"]["sq610-1"]["support_fields"][
+            "SunnySetpoint_x100"
+        ]
+        == 4550
+    )
+    assert (
+        diagnostics["climate"]["devices"]["sq610-1"]["normalized_fields"][
+            "current_humidity"
+        ]
+        == 45.5
+    )
+    assert (
+        diagnostics["climate"]["devices"]["sq610-1"]["normalized_fields"][
+            "supports_cooling"
+        ]
+        is True
+    )
+    assert (
+        diagnostics["climate"]["devices"]["fc600-1"]["support_fields"][
+            "CoolingSetpoint_x100"
+        ]
+        == 2300
+    )
+    assert (
+        diagnostics["climate"]["devices"]["fc600-1"]["normalized_fields"][
+            "supports_fan"
+        ]
+        is True
+    )
 
 
 async def test_diagnostics_handles_unloaded_entry(hass: HomeAssistant) -> None:

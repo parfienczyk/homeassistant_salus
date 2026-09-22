@@ -28,17 +28,21 @@ from .const import (
     DEFAULT_SCAN_INTERVAL_SECONDS,
     DEVICE_AVAILABILITY_RETENTION_REFRESHES,
     DOMAIN,
-    GATEWAY_OPERATION_TIMEOUT_SECONDS,
+    MAX_POLL_TIMEOUT_SECONDS,
     MAX_POST_COMMAND_REFRESH_DELAY,
     MAX_SCAN_INTERVAL_SECONDS,
+    MIN_POLL_TIMEOUT_SECONDS,
     MIN_POST_COMMAND_REFRESH_DELAY,
     MIN_SCAN_INTERVAL_SECONDS,
+    POLL_TIMEOUT_MARGIN_SECONDS,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 ISSUE_GATEWAY_UNAVAILABLE = "gateway_unavailable"
-TROUBLESHOOTING_URL = "https://github.com/parfienczyk/homeassistant_salus#troubleshooting"
+TROUBLESHOOTING_URL = (
+    "https://github.com/parfienczyk/homeassistant_salus#troubleshooting"
+)
 
 
 def _utcnow_iso() -> str:
@@ -220,6 +224,7 @@ class SalusDataUpdateCoordinator(DataUpdateCoordinator[SalusData]):
         diagnostics["scan_interval_seconds"] = int(
             _scan_interval_from_options(self._config_entry.options).total_seconds()
         )
+        diagnostics["poll_timeout_seconds"] = self._poll_timeout()
         diagnostics["post_command_refresh_delay_seconds"] = (
             self._post_command_refresh_delay()
         )
@@ -303,7 +308,7 @@ class SalusDataUpdateCoordinator(DataUpdateCoordinator[SalusData]):
             # user command must not eat into the gateway I/O budget, or a
             # healthy gateway gets reported as unavailable.
             async with self.gateway_lock:
-                async with asyncio.timeout(GATEWAY_OPERATION_TIMEOUT_SECONDS):
+                async with asyncio.timeout(self._poll_timeout()):
                     await self.gateway.poll_status()
                     climate_devices = dict(self.gateway.get_climate_devices() or {})
 
@@ -344,6 +349,26 @@ class SalusDataUpdateCoordinator(DataUpdateCoordinator[SalusData]):
         except Exception as ex:
             self._record_update_failure(ex)
             raise
+
+    def _poll_timeout(self) -> float:
+        """Return the timeout for one gateway poll.
+
+        One `readall` plus a request per device family run sequentially, so a
+        fixed budget is too tight on larger installations. Scale with the scan
+        interval while always finishing before the next poll is due.
+        """
+        scan_interval = _scan_interval_from_options(
+            getattr(self._config_entry, "options", {})
+        ).total_seconds()
+        return float(
+            max(
+                MIN_POLL_TIMEOUT_SECONDS,
+                min(
+                    MAX_POLL_TIMEOUT_SECONDS,
+                    scan_interval - POLL_TIMEOUT_MARGIN_SECONDS,
+                ),
+            )
+        )
 
     def _poll_failure_threshold(self) -> int:
         """Return configured consecutive poll failures before marking unavailable."""

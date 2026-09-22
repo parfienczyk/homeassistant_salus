@@ -63,9 +63,7 @@ def reset_fake_gateway():
 @pytest.fixture(autouse=True)
 def mock_setup_entry():
     """Prevent actual setup after flow creates entry."""
-    with patch(
-        "custom_components.salus.async_setup_entry", return_value=True
-    ):
+    with patch("custom_components.salus.async_setup_entry", return_value=True):
         yield
 
 

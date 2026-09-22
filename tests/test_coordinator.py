@@ -171,10 +171,15 @@ async def test_update_data_maps_connection_failure(hass: HomeAssistant) -> None:
     with pytest.raises(UpdateFailed):
         await coordinator._async_update_data()
 
-    assert "IT600ConnectionError: offline" in coordinator.gateway_diagnostics()["last_update_error"]
+    assert (
+        "IT600ConnectionError: offline"
+        in coordinator.gateway_diagnostics()["last_update_error"]
+    )
 
 
-async def test_connection_failures_keep_last_data_until_threshold(hass: HomeAssistant) -> None:
+async def test_connection_failures_keep_last_data_until_threshold(
+    hass: HomeAssistant,
+) -> None:
     gateway = FakeGateway()
     coordinator = _coordinator(hass, gateway)
     coordinator.data = await coordinator._async_update_data()
@@ -198,7 +203,9 @@ async def test_connection_failures_keep_last_data_until_threshold(hass: HomeAssi
     await coordinator._async_update_data()
 
 
-async def test_zero_threshold_marks_unavailable_immediately(hass: HomeAssistant) -> None:
+async def test_zero_threshold_marks_unavailable_immediately(
+    hass: HomeAssistant,
+) -> None:
     gateway = FakeGateway()
     coordinator = _coordinator(hass, gateway, options={CONF_POLL_FAILURE_THRESHOLD: 0})
     coordinator.data = await coordinator._async_update_data()
@@ -315,7 +322,11 @@ async def test_poll_timeout_excludes_gateway_lock_wait(
 ) -> None:
     """A command holding the gateway lock must not consume the poll timeout."""
     monkeypatch.setattr(
-        "custom_components.salus.coordinator.GATEWAY_OPERATION_TIMEOUT_SECONDS",
+        "custom_components.salus.coordinator.MIN_POLL_TIMEOUT_SECONDS",
+        0.2,
+    )
+    monkeypatch.setattr(
+        "custom_components.salus.coordinator.MAX_POLL_TIMEOUT_SECONDS",
         0.2,
     )
     gateway = FakeGateway()
@@ -351,9 +362,7 @@ async def test_vanished_device_is_dropped_from_availability_diagnostics(
         await coordinator._async_update_data()
         diagnostics = coordinator.device_availability_diagnostics()
         assert diagnostics["sq610-1"]["online_status_source"] == "missing_from_snapshot"
-        assert (
-            diagnostics["sq610-1"]["consecutive_missed_refreshes"] == expected_misses
-        )
+        assert diagnostics["sq610-1"]["consecutive_missed_refreshes"] == expected_misses
 
     await coordinator._async_update_data()
 
@@ -372,3 +381,41 @@ async def test_present_but_unavailable_device_is_kept(hass: HomeAssistant) -> No
     diagnostics = coordinator.device_availability_diagnostics()
     assert diagnostics["sq610-1"]["available"] is False
     assert diagnostics["sq610-1"]["online_status_source"] != "missing_from_snapshot"
+
+
+@pytest.mark.parametrize(
+    ("scan_interval", "expected_timeout"),
+    [
+        (10, 10.0),  # floor: never shorter than the minimum budget
+        (20, 18.0),  # default: scan interval minus the margin
+        (45, 43.0),
+        (300, 60.0),  # ceiling: a hung poll must not block for minutes
+    ],
+)
+async def test_poll_timeout_scales_with_scan_interval(
+    hass: HomeAssistant,
+    scan_interval: int,
+    expected_timeout: float,
+) -> None:
+    """A poll issues one request per device family, so 10 s can be too tight."""
+    coordinator = _coordinator(
+        hass,
+        FakeGateway(),
+        options={CONF_SCAN_INTERVAL: scan_interval},
+    )
+
+    assert coordinator._poll_timeout() == expected_timeout
+    assert coordinator.gateway_diagnostics()["poll_timeout_seconds"] == expected_timeout
+
+
+async def test_poll_timeout_never_outlives_the_scan_interval(
+    hass: HomeAssistant,
+) -> None:
+    """The next poll must never be due while the previous one is still running."""
+    for scan_interval in (10, 15, 20, 60, 120, 300):
+        coordinator = _coordinator(
+            hass,
+            FakeGateway(),
+            options={CONF_SCAN_INTERVAL: scan_interval},
+        )
+        assert coordinator._poll_timeout() <= scan_interval

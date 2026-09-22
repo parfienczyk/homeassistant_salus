@@ -267,9 +267,7 @@ class TestSQ610Properties:
         assert entity.locked is True
 
     def test_extra_state_attributes_includes_normalized_state(self):
-        device = make_climate_device(
-            hvac_mode="heat", preset_mode="Permanent Hold"
-        )
+        device = make_climate_device(hvac_mode="heat", preset_mode="Permanent Hold")
         fields = {
             device.unique_id: {
                 "system_mode": 4,
@@ -665,7 +663,9 @@ class TestSQ610Commands:
 
         await entity.async_set_hvac_mode(HVACMode.HEAT)
 
-        _assert_gateway_calls(coord, _gateway_call("set_climate_mode", device, HVACMode.HEAT))
+        _assert_gateway_calls(
+            coord, _gateway_call("set_climate_mode", device, HVACMode.HEAT)
+        )
 
     @pytest.mark.parametrize(
         ("preset_mode", "raw_preset"),
@@ -920,7 +920,9 @@ class TestFC600Commands:
 
         await entity.async_set_fan_mode("high")
 
-        _assert_gateway_calls(coord, _gateway_call("set_climate_fan_mode", device, "High"))
+        _assert_gateway_calls(
+            coord, _gateway_call("set_climate_fan_mode", device, "High")
+        )
 
     async def test_set_fan_mode_exposes_pending_mode_until_confirmation(self):
         device, _, entity = _thermostat(make_fc600_device(fan_mode="Auto"))
@@ -970,7 +972,9 @@ class TestFC600Commands:
 
         await entity.async_set_temperature(temperature=24.0)
 
-        _assert_gateway_calls(coord, _gateway_call("set_climate_temperature", device, 24.0))
+        _assert_gateway_calls(
+            coord, _gateway_call("set_climate_temperature", device, 24.0)
+        )
 
     async def test_set_temperature_fc600_eco_is_noop(self):
         device, coord, entity = _thermostat(
@@ -994,7 +998,9 @@ class TestFC600Commands:
 
         await entity.async_set_preset_mode(preset_mode)
 
-        _assert_gateway_calls(coord, _gateway_call("set_climate_preset", device, raw_preset))
+        _assert_gateway_calls(
+            coord, _gateway_call("set_climate_preset", device, raw_preset)
+        )
         assert coord.refresh_requests == 1
 
     async def test_set_hvac_mode_fc600_off_uses_preset(self):
@@ -1004,7 +1010,9 @@ class TestFC600Commands:
 
         await entity.async_set_hvac_mode(HVACMode.OFF)
 
-        _assert_gateway_calls(coord, _gateway_call("set_climate_preset", device, RAW_PRESET_OFF))
+        _assert_gateway_calls(
+            coord, _gateway_call("set_climate_preset", device, RAW_PRESET_OFF)
+        )
         assert coord.refresh_requests == 1
 
     @pytest.mark.parametrize("model", ["FC600", "FC600NH"])
@@ -1035,7 +1043,9 @@ class TestFC600Commands:
 
         await entity.async_set_preset_mode(PRESET_ECO)
 
-        _assert_gateway_calls(coord, _gateway_call("set_climate_preset", device, RAW_PRESET_ECO))
+        _assert_gateway_calls(
+            coord, _gateway_call("set_climate_preset", device, RAW_PRESET_ECO)
+        )
 
     async def test_standard_heat_only_device_uses_single_hvac_menu(self):
         device = make_climate_device(

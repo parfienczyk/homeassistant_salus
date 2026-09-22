@@ -49,10 +49,9 @@ from custom_components.salus._climate_state import (
 )
 from tests.conftest import make_climate_device
 
-TURN_ON_OFF_FEATURES = (
-    getattr(ClimateEntityFeature, "TURN_ON", ClimateEntityFeature(0))
-    | getattr(ClimateEntityFeature, "TURN_OFF", ClimateEntityFeature(0))
-)
+TURN_ON_OFF_FEATURES = getattr(
+    ClimateEntityFeature, "TURN_ON", ClimateEntityFeature(0)
+) | getattr(ClimateEntityFeature, "TURN_OFF", ClimateEntityFeature(0))
 
 
 def _device(**overrides: Any) -> ClimateDevice:
@@ -299,7 +298,9 @@ SQ610_COOLING = {
         ),
     ],
 )
-def test_sq610_view_state_cases(device_overrides, state_kwargs, attrs, expected) -> None:
+def test_sq610_view_state_cases(
+    device_overrides, state_kwargs, attrs, expected
+) -> None:
     assert _attrs(_state(device_overrides, **state_kwargs), *attrs) == expected
 
 
@@ -455,11 +456,15 @@ def test_fc600_fan_modes_are_exposed(model: str) -> None:
         ),
     ],
 )
-def test_fc600_view_state_cases(device_overrides, state_kwargs, attrs, expected) -> None:
+def test_fc600_view_state_cases(
+    device_overrides, state_kwargs, attrs, expected
+) -> None:
     assert _attrs(_state(device_overrides, **state_kwargs), *attrs) == expected
 
 
-def test_fc600_reported_schedule_override_is_in_preset_modes_without_hold_type() -> None:
+def test_fc600_reported_schedule_override_is_in_preset_modes_without_hold_type() -> (
+    None
+):
     """Keep the active FC600 preset available when HoldType is unavailable."""
     state = _state(
         {

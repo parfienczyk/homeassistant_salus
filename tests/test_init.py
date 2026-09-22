@@ -140,3 +140,50 @@ async def test_failed_setup_closes_gateway_and_clears_runtime_data(
 
     assert FakeGateway.instances[0].closed is True
     assert not hasattr(entry, "runtime_data")
+
+
+async def test_unload_entry_closes_gateway_and_cancels_pending_refresh(
+    hass: HomeAssistant,
+) -> None:
+    """Unloading must release the gateway and leave no refresh task behind."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.0.2.10", CONF_TOKEN: "001E5E0D32906128"},
+    )
+    entry.add_to_hass(hass)
+
+    with patch.object(salus_init, "IT600Gateway", FakeGateway):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        coordinator = entry.runtime_data.coordinator
+        gateway = FakeGateway.instances[0]
+        await coordinator.async_request_debounced_refresh()
+        assert coordinator._debounced_refresh_task is not None
+        assert gateway.closed is False
+
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert gateway.closed is True
+    assert coordinator._debounced_refresh_task is None
+    assert entry.state is ConfigEntryState.NOT_LOADED
+
+
+async def test_changing_options_reloads_the_entry(hass: HomeAssistant) -> None:
+    """Options feed the coordinator at construction, so they need a reload."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: "192.0.2.10", CONF_TOKEN: "001E5E0D32906128"},
+        options={CONF_SCAN_INTERVAL: 20},
+    )
+    entry.add_to_hass(hass)
+
+    with patch.object(salus_init, "IT600Gateway", FakeGateway):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        hass.config_entries.async_update_entry(entry, options={CONF_SCAN_INTERVAL: 45})
+        await hass.async_block_till_done()
+
+        assert entry.runtime_data.coordinator.update_interval == timedelta(seconds=45)

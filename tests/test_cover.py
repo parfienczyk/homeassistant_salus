@@ -157,9 +157,7 @@ class TestSalusCoverCommands:
         assert entity.is_closed is False
         assert entity.current_cover_position == 100
 
-        device = deliver_poll(
-            entity, device, is_closed=True, current_cover_position=0
-        )
+        device = deliver_poll(entity, device, is_closed=True, current_cover_position=0)
         assert entity.is_closed is True
         assert entity.current_cover_position == 0
 
@@ -180,9 +178,7 @@ class TestSalusCoverCommands:
         assert entity.is_closed is True
         assert entity.current_cover_position == 0
 
-        device = deliver_poll(
-            entity, device, is_closed=True, current_cover_position=0
-        )
+        device = deliver_poll(entity, device, is_closed=True, current_cover_position=0)
         assert entity.is_closed is True
         assert entity.current_cover_position == 0
 

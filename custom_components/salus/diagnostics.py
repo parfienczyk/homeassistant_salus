@@ -160,7 +160,9 @@ def _climate_diagnostics(data: SalusData | None) -> dict[str, Any]:
 
 def _normalized_climate_fields(device: Any) -> dict[str, Any]:
     """Return normalized climate fields for diagnostics."""
-    fields = {field: getattr(device, field, None) for field in CLIMATE_NORMALIZED_FIELDS}
+    fields = {
+        field: getattr(device, field, None) for field in CLIMATE_NORMALIZED_FIELDS
+    }
     fields.update(
         {
             field: list(getattr(device, field, None) or [])

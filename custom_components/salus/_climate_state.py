@@ -95,10 +95,9 @@ MANUAL_PRESET_MODES = {
     RAW_PRESET_PERMANENT_HOLD,
     RAW_PRESET_ECO,
 }
-TURN_ON_OFF_FEATURES = (
-    getattr(ClimateEntityFeature, "TURN_ON", ClimateEntityFeature(0))
-    | getattr(ClimateEntityFeature, "TURN_OFF", ClimateEntityFeature(0))
-)
+TURN_ON_OFF_FEATURES = getattr(
+    ClimateEntityFeature, "TURN_ON", ClimateEntityFeature(0)
+) | getattr(ClimateEntityFeature, "TURN_OFF", ClimateEntityFeature(0))
 
 
 @dataclass(frozen=True, slots=True)
@@ -325,10 +324,10 @@ def _effective_hvac_mode(
             return HVACMode.OFF
         if system_mode == SQ610_MODE_COOL or running_state_is_cooling(running_state):
             return HVACMode.COOL
-        if (
-            system_mode in {SQ610_MODE_HEAT, SQ610_MODE_EMERGENCY_HEAT}
-            or running_state_is_heating(running_state)
-        ):
+        if system_mode in {
+            SQ610_MODE_HEAT,
+            SQ610_MODE_EMERGENCY_HEAT,
+        } or running_state_is_heating(running_state):
             return HVACMode.HEAT
         return HVACMode.HEAT
 

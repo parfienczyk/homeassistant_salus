@@ -112,9 +112,7 @@ async def test_rapid_setpoint_changes_collapse_into_one_write(
     """
     gateway = await _setup(hass)
 
-    await asyncio.gather(
-        *[_set_temperature(hass, 20.0 + step) for step in range(5)]
-    )
+    await asyncio.gather(*[_set_temperature(hass, 20.0 + step) for step in range(5)])
     await hass.async_block_till_done()
 
     assert gateway.temperature_writes == [24.0]

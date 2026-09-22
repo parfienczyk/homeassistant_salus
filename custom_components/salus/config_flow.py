@@ -81,10 +81,12 @@ def _gateway_settings_schema(
         _required_field(CONF_TOKEN, defaults.get(CONF_TOKEN)): str,
     }
     if include_name:
-        schema[_optional_field(
-            CONF_NAME,
-            defaults.get(CONF_NAME, DEFAULT_GATEWAY_NAME),
-        )] = str
+        schema[
+            _optional_field(
+                CONF_NAME,
+                defaults.get(CONF_NAME, DEFAULT_GATEWAY_NAME),
+            )
+        ] = str
     return vol.Schema(schema)
 
 
